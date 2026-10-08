@@ -1,0 +1,29 @@
+# Secrets & credentials
+cloudflared/*.json
+cloudflared/config.yml
+*.env
+.env.*
+
+# Session data & tokens
+data/selfservice_sessions.json
+data/logs/
+*.log
+
+# Backups
+backups/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+*.tmp
