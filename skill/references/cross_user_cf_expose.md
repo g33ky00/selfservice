@@ -1,7 +1,7 @@
 # Cross-user cf-expose pattern
 
 Problem: install/update a bash executable under `~hermes/bin/` from another account while:
-- leaving `/home/g33ky` untouched
+- leaving `$HOME` untouched
 - avoiding inline heredocs through `su -c`
 - avoiding shell quoting failures
 - handling cases where `write_file` or `cp /tmp/...` fails because of read/write boundaries

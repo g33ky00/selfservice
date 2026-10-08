@@ -11,10 +11,10 @@
 
 ## Tunnel ingress flexibility
 - Different targets may need different upstream schemes and TLS verification:
-  - `pytheas`: `https://192.168.2.40:443` + `noTLSVerify: true`
-  - `shiva`: `http://192.168.2.10:8006` + `noTLSVerify: false`
+  - `server1`: `https://10.0.0.100:443` + `noTLSVerify: true`
+  - `server2`: `http://10.0.0.100:8006` + `noTLSVerify: false`
 - The manager must derive `service` from per-target `scheme` rather than hardcoding `https`.
 
 ## Cloudflare zone
-- `coresynq.cc` zone ID: `67452dcd2d79193536ae440c712f0224`
-- Account ID sourced from `/home/g33ky/.config/cloudflare/credentials.env`
+- `example.com` zone ID: `your_zone_id`
+- Account ID sourced from `$HOME/.config/cloudflare/credentials.env`

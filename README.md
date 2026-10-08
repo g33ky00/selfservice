@@ -45,7 +45,7 @@
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │   User Browser  │────▶│  ss.example.com  │────▶│  Cloudflare     │
-│                 │     │  /<token>        │     │  Tunnel (ss)    │
+│                 │     │  /<token>        │     │  Tunnel         │
 └─────────────────┘     └──────────────────┘     └────────┬────────┘
                                                           │
                                                           ▼
@@ -57,14 +57,13 @@
                                                           ▼
                                                  ┌─────────────────┐
                                                  │  Reverse Proxy  │
-                                                 │  (Python :18080)│
+                                                 │  (Python)       │
                                                  └────────┬────────┘
                                                           │
                                                           ▼
                                                  ┌─────────────────┐
                                                  │  Internal       │
                                                  │  Service        │
-                                                 │  (NAS, SSH…)    │
                                                  └─────────────────┘
 ```
 
@@ -72,8 +71,8 @@
 
 | Component | Description |
 |---|---|
-| **Cloudflare Tunnel** | Permanent tunnel (`ss`) with dynamic ingress rules |
-| **cloudflared-ss.service** | systemd user service managing the tunnel |
+| **Cloudflare Tunnel** | Permanent tunnel with dynamic ingress rules |
+| **cloudflared service** | systemd user service managing the tunnel |
 | **Reverse Proxy** | Python HTTP proxy with URL rewriting and cache-busting |
 | **Session DB** | JSON file tracking active sessions and metadata |
 | **GC Timer** | systemd transient timer for automatic session cleanup |
@@ -104,18 +103,17 @@
 ### Cloudflare Requirements
 
 - Cloudflare account with Zero Trust access
-- A domain managed by Cloudflare (e.g., `coresynq.cc`)
+- A domain managed by Cloudflare
 - API token with `Cloudflare Tunnel` and `DNS` read/edit permissions
 - A provisioned Cloudflare Tunnel (the script can create one)
 
 ### Environment Variables
 
-Create `/home/g33ky/.config/cloudflare/credentials.env`:
+Create a `config.local.sh` file based on `config.example.sh`:
 
 ```bash
-CLOUDFLARE_API_TOKEN=your_api_token_here
-CF_ACCOUNT_ID=your_account_id
-CF_ZONE_ID=your_zone_id
+cp config.example.sh config.local.sh
+# Edit config.local.sh with your actual values
 ```
 
 ---
@@ -141,12 +139,11 @@ curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloud
 chmod +x ~/.local/bin/cloudflared
 ```
 
-### 3. Configure Cloudflare credentials
+### 3. Configure credentials
 
 ```bash
-mkdir -p ~/.config/cloudflare
-cp credentials.env.example ~/.config/cloudflare/credentials.env
-chmod 600 ~/.config/cloudflare/credentials.env
+cp config.example.sh config.local.sh
+chmod 600 config.local.sh
 # Edit with your actual values
 ```
 
@@ -163,13 +160,13 @@ cp -r skill/ ~/.hermes/skills/expose_internal_service/
 ### Create a temporary HTTP link
 
 ```bash
-./scripts/selfservice.sh http 192.168.2.8 5001
+./scripts/selfservice.sh http 10.0.0.100 5001
 ```
 
 **Output:**
 ```
 === SelfService session request ===
-type=http target=192.168.2.8 port=5001
+type=http target=10.0.0.100 port=5001
 session_token=a1b2c3d4e5f6...
 SESSION_LINK=https://ss.example.com/a1b2c3d4e5f6...
 EXPIRES_IN=900s
@@ -178,56 +175,61 @@ EXPIRES_IN=900s
 ### Create a temporary SSH link (via Gotty)
 
 ```bash
-./scripts/selfservice.sh ssh 192.168.2.40 22
+./scripts/selfservice.sh ssh 10.0.0.100 22
 ```
 
 ### Custom TTL
 
 ```bash
-TTL_SEC=1800 ./scripts/selfservice.sh http 192.168.2.8 5001
+TTL_SEC=1800 ./scripts/selfservice.sh http 10.0.0.100 5001
 ```
-
-### Using the Hermes skill
-
-Simply ask Hermes:
-> "Create a temporary link to http://192.168.2.8:5001"
 
 ---
 
 ## Configuration
 
-### Script Variables
+### config.example.sh
+
+```bash
+# Cloudflare
+CF_ACCOUNT_ID="your_account_id"
+CF_ZONE_ID="your_zone_id"
+CF_API_TOKEN="your_api_token"
+
+# Tunnel
+TUNNEL_ID="your_tunnel_uuid"
+TUNNEL_CREDENTIALS_FILE="$HOME/.cloudflared/your_tunnel_uuid.json"
+
+# Public hostname
+PUBLIC_HOST="ss.example.com"
+
+# Session defaults
+DEFAULT_TTL_SEC=900
+MAX_TTL_SEC=7200
+
+# Paths
+SESSION_DB_DIR="$HOME/.hermes/selfservice"
+SESSION_DB_FILE="$SESSION_DB_DIR/selfservice_sessions.json"
+SESSION_LOCK_FILE="$SESSION_DB_DIR/.active_session.lock"
+LOG_DIR="$SESSION_DB_DIR/logs"
+
+# Gotty
+GOTTY_BIN="$HOME/.local/bin/gotty"
+
+# Proxy
+PROXY_PORT=18080
+PROXY_LOG="/tmp/ss_proxy.log"
+```
+
+### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `TTL_SEC` | `900` | Session lifetime in seconds (max 7200) |
-| `HOST` | `ss.example.com` | Public hostname for the tunnel |
+| `PUBLIC_HOST` | `ss.example.com` | Public hostname for the tunnel |
 | `TUNNEL_ID` | — | Cloudflare Tunnel UUID |
-| `CF_CREDS` | — | Path to tunnel credentials file |
-| `DB` | — | Path to session database JSON |
-
-### Cloudflare Tunnel Config
-
-The tunnel ingress is dynamically managed. Default (no active session):
-
-```yaml
-tunnel: <TUNNEL_ID>
-credentials-file: /path/to/credentials.json
-ingress:
-  - service: http_status:404
-```
-
-Active session:
-
-```yaml
-tunnel: <TUNNEL_ID>
-credentials-file: /path/to/credentials.json
-ingress:
-  - hostname: ss.example.com
-    path: /<token>
-    service: http://127.0.0.1:18080
-  - service: http_status:404
-```
+| `CF_ACCOUNT_ID` | — | Cloudflare account ID |
+| `CF_ZONE_ID` | — | Cloudflare zone ID |
 
 ---
 
@@ -319,14 +321,6 @@ Contributions are welcome! Please:
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-## Acknowledgments
-
-- [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) — for the secure tunnel infrastructure
-- [Gotty](https://github.com/sudosu/gotty) — for web-based terminal access
-- [Hermes Agent](https://hermes-agent.nousresearch.com/) — for the AI agent integration
 
 ---
 

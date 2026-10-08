@@ -3,6 +3,7 @@ cloudflared/*.json
 cloudflared/config.yml
 *.env
 .env.*
+config.local.sh
 
 # Session data & tokens
 data/selfservice_sessions.json

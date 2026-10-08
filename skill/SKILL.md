@@ -29,8 +29,8 @@ version: "2026-07-16"
 {
   "service": "ssh",
   "port": 22,
-  "target": "pytheas",
-  "target_ip": "192.168.2.40",
+  "target": "server1",
+  "target_ip": "10.0.0.100",
   "ttl": 900,
   "scheme": "tcp"
 }
@@ -54,7 +54,7 @@ Si l’utilisateur fournit uniquement un contexte naturel, Hermes extrait :
 - `systemd-run --user` disponible
 - Accès à l’API Cloudflare avec droits : Tunnel Edit, DNS Edit
 - Environment Cloudflare chargé :
-  `set -a; . /home/g33ky/.config/cloudflare/credentials.env; set +a`
+  `set -a; . $HOME/.config/cloudflare/credentials.env; set +a`
 - Le script manager doit rester dans `scripts/` du skill.
 
 ## Pièges validés en production
@@ -140,9 +140,9 @@ Fichier : `scripts/cf_tunnel_manager.py` dans le répertoire du skill.
 - Aucune impression hors JSON sur stdout ; logs autorisés sur stderr uniquement si debug activé par flag non contractuel
 
 ## Sécurité
-- Secrets depuis `/home/g33ky/.config/cloudflare/credentials.env` uniquement
+- Secrets depuis `$HOME/.config/cloudflare/credentials.env` uniquement
 - Ne jamais logger `CLOUDFLARE_API_TOKEN`
-- Vérifier que `/home/g33ky/.config/cloudflare/credentials.env` a permissions `600`
+- Vérifier que `$HOME/.config/cloudflare/credentials.env` a permissions `600`
 - Ne pas exposer les jetons `TUNNEL_TOKEN` dans la réponse
 - `chmod 600` obligatoire sur `/tmp/selfservice_*.json` car contient tokens actifs
 - Authentifier le demandeur avec une règle locale avant provision :
@@ -161,6 +161,6 @@ Fichier : `scripts/cf_tunnel_manager.py` dans le répertoire du skill.
 
 ## Références internes
 - `references/architecture-v2.md` : décision V2, justification sécurité, comparaison V1.
-- `references/environment_constraints.md` : contraintes découvertes dans la session, notamment absence de `at` et fallback timer systemd, chemin du script manager, mappings scheme/port par target, zone `coresynq.cc`.
+- `references/environment_constraints.md` : contraintes découvertes dans la session, notamment absence de `at` et fallback timer systemd, chemin du script manager, mappings scheme/port par target, zone `example.com`.
 - `references/cloudflare_tunnel_api_pitfalls.md` : format création/config tunnel, erreurs JSON observées, ordre create-then-patch.
 - `references/selfservice_pattern.md` : pattern générique d’auto-inscription utilisateur pour exposition à la demande via `ss.example.com`.

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Ephemeral Cloudflare Tunnel Manager — expose_internal_service skill."""
-
 import os
 import sys
 import json
@@ -12,34 +11,36 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+# ── Configuration from environment ──────────────────────────────────
 CF_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
 CF_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
-CF_ZONE_ID = "67452dcd2d79193536ae440c712f0224"  # coresynq.cc
-DEFAULT_EMAIL = "alban.clergeot@proton.me"
+CF_ZONE_ID = os.environ.get("CLOUDFLARE_ZONE_ID")
+DEFAULT_EMAIL = os.environ.get("DEFAULT_EMAIL", "admin@example.com")
 CF_BASE = "https://api.cloudflare.com/client/v4"
 
+# ── Targets (override via environment or config file) ───────────────
 TARGETS = {
-    "pytheas": {
-        "host": "pytheas.coresynq.cc",
-        "ip": "192.168.2.40",
+    "server1": {
+        "host": "server1.example.com",
+        "ip": "10.0.0.100",
         "port": "443",
         "scheme": "https",
         "no_tls_verify": True,
     },
-    "shiva": {
-        "host": "shiva.coresynq.cc",
-        "ip": "192.168.2.10",
-        "port": "8006",
+    "server2": {
+        "host": "server2.example.com",
+        "ip": "10.0.0.100",
+        "port": "8080",
         "scheme": "http",
         "no_tls_verify": False,
     },
 }
 
-STATE_DIR = Path("/tmp")
+STATE_DIR = Path(os.environ.get("STATE_DIR", "/tmp"))
 
-# Alias interne autorisé
+# Internal aliases (customize in config.local.py)
 KNOWN_ALIASES = {
-    "pytheas": "pytheas",
+    "server1": "server1",
 }
 
 
@@ -70,7 +71,8 @@ class CfClient:
         t = TARGETS.get(target)
         if not t:
             return None, {"UNKNOWN_TARGET": target}
-        hostname = f"{target}-{session_id}.coresynq.cc"
+        zone_suffix = (CF_ZONE_ID or "example").split('.')[0]
+        hostname = f"{target}-{session_id}.{zone_suffix}.example.com"
         service = f"{t['scheme']}://{t['ip']}:{t['port']}"
         tunnel_secret = base64.b64encode(secrets.token_bytes(32)).decode()
 
@@ -228,7 +230,7 @@ def schedule_destroy(session_id, ttl):
         f"Description=CF tunnel cleanup {session_id}\n"
         "[Service]\n"
         "Type=oneshot\n"
-        f"ExecStart=/usr/bin/python3 /home/g33ky/.hermes/profiles/dev/skills/devops/expose_internal_service/scripts/cf_tunnel_manager.py --action destroy --session-id {session_id}\n"
+        f"ExecStart=/usr/bin/python3 {script_path} --action destroy --session-id {session_id}\n"
     )
     timer = (
         "[Unit]\n"
@@ -304,7 +306,8 @@ def main():
             print(json.dumps(res), flush=True)
         return
     state, tunnel_secret, tunnel_token = res
-    hostname = f"{target}-{session_id}.coresynq.cc"
+    zone_suffix = (CF_ZONE_ID or "example").split('.')[0]
+    hostname = f"{target}-{session_id}.{zone_suffix}.example.com"
     ok, info = run_local(session_id, ttl, tunnel_token)
     if not ok:
         print(json.dumps({"status": "error", "step_failed": "LOCAL_RUNNER", "details": info}), flush=True)
@@ -316,7 +319,7 @@ def main():
     print(json.dumps({
         "status": "success",
         "public_url": f"https://{hostname}",
-        "message": f"Tunnel Zero Trust établi. Un code PIN sera envoyé à {email}.",
+        "message": f"Tunnel Zero Trust established. A PIN code will be sent to {email}.",
         "ttl_seconds": int(ttl),
     }), flush=True)
 

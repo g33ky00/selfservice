@@ -4,18 +4,28 @@ set -euo pipefail
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
 
-# ── Config ──────────────────────────────────────────────────────────
-TTL_SEC="${TTL_SEC:-900}"
-CF_CREDS="$HOME/.cloudflared/4a854f51-d2aa-4a42-a026-3e77eb776265.json"
-CF_CONFIG="$HOME/.cloudflared/config.yml"
-TUNNEL_ID="4a854f51-d2aa-4a42-a026-3e77eb776265"
-ACCOUNT_ID="3f84cf68cee5270e8d1032452404564a"
-HOST="ss.example.com"
-DB="$HOME/.hermes/selfservice/selfservice_sessions.json"
-LOCK="$HOME/.hermes/selfservice/.active_session.lock"
-GOTTY_BIN="$HOME/.local/bin/gotty"
+# ── Load config ─────────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-LOCK_FILE="$HOME/.hermes/selfservice/.active_session.lock"
+if [ -f "$PROJECT_ROOT/config.local.sh" ]; then
+  source "$PROJECT_ROOT/config.local.sh"
+else
+  echo "ERROR: config.local.sh not found. Copy config.example.sh to config.local.sh and fill in your values." >&2
+  exit 1
+fi
+
+# ── Config (overridable via environment) ───────────────────────────
+TTL_SEC="${TTL_SEC:-${DEFAULT_TTL_SEC:-900}}"
+CF_CREDS="${TUNNEL_CREDENTIALS_FILE:-$HOME/.cloudflared/your_tunnel_uuid.json}"
+CF_CONFIG="$HOME/.cloudflared/config.yml"
+TUNNEL_ID="${TUNNEL_ID:-your_tunnel_uuid}"
+ACCOUNT_ID="${CF_ACCOUNT_ID:-your_account_id}"
+HOST="${PUBLIC_HOST:-ss.example.com}"
+DB="${SESSION_DB_FILE:-$HOME/.hermes/selfservice/selfservice_sessions.json}"
+LOCK="${SESSION_LOCK_FILE:-$HOME/.hermes/selfservice/.active_session.lock}"
+GOTTY_BIN="${GOTTY_BIN:-$HOME/.local/bin/gotty}"
+LOCK_FILE="$LOCK"
 export ACCOUNT_ID TUNNEL_ID
 
 # ── Helpers ─────────────────────────────────────────────────────────
@@ -88,12 +98,10 @@ _load_cf_env() {
 }
 
 _yaml_escape() {
-  # minimal yaml string escaper for token/path values
   python3 -c 'import sys,json; print(json.dumps(sys.argv[1]))' "$1"
 }
 
 cf_reset_ingress() {
-  # Write minimal local ingress config and reload daemon (Option B)
   local tmp="$CF_CONFIG.$$.tmp"
   cat > "$tmp" <<EOF
 tunnel: $TUNNEL_ID
@@ -108,7 +116,6 @@ EOF
 }
 
 cf_set_token_ingress() {
-  # Write local ingress config with token rule + catch-all, then reload
   local token="$1"; local port="$2"
   local escaped_token; escaped_token="$(_yaml_escape "/$token")"
   local tmp="$CF_CONFIG.$$.tmp"
@@ -130,9 +137,9 @@ EOF
 # ── Gotty launcher ──────────────────────────────────────────────────
 start_gotty() {
   local target="$1"; local port="$2"; local token="$3"
-  mkdir -p "$HOME/.hermes/selfservice/logs"
-  local log="$HOME/.hermes/selfservice/logs/gotty_${token}.log"
-  "$GOTTY_BIN" -w -r --ws-origin "ss.example.com" --port "$port" --permit-write \
+  mkdir -p "$(dirname "$DB")/logs"
+  local log="$(dirname "$DB")/logs/gotty_${token}.log"
+  "$GOTTY_BIN" -w -r --ws-origin "$HOST" --port "$port" --permit-write \
     --address 127.0.0.1 -t 'xterm-256color' \
     "$target" >"$log" 2>&1 &
   local pid=$!

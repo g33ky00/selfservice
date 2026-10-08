@@ -12,8 +12,8 @@ cleanup() {
     fuser -k -n tcp "${PORT}" 2>/dev/null || true
   fi
   cat > "$HOME/.cloudflared/config.yml" <<'EOF'
-tunnel: 4a854f51-d2aa-4a42-a026-3e77eb776265
-credentials-file: /home/g33ky/.cloudflared/4a854f51-d2aa-4a42-a026-3e77eb776265.json
+tunnel: your_tunnel_uuid
+credentials-file: $HOME/.cloudflared/your_tunnel_uuid.json
 
 ingress:
   - service: http_status:404
