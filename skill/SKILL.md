@@ -10,17 +10,17 @@ version: "2026-07-16"
 
 ## Use this skill when
 - L’utilisateur demande un accès à la demande vers une machine/service interne depuis l’extérieur
-- Requête contenant : "accès à la demande", "tunnel temporaire", "exposer ponctuellement", "expose", "lien temporaire", "self-service", "ss.coresynq.cc"
+- Requête contenant : "accès à la demande", "tunnel temporaire", "exposer ponctuellement", "expose", "lien temporaire", "self-service", "ss.example.com"
 - Besoin exposant un service/port/cible variables, non limité à une liste figée, déclenché par simple demande utilisateur
-- Sortie attendue : lien cliquable public temporaire vers `ss.coresynq.cc` utilisable dans un navigateur ou client SSH
+- Sortie attendue : lien cliquable public temporaire vers `ss.example.com` utilisable dans un navigateur ou client SSH
 
 ## Architecture validée V2 (adopter par défaut)
-- Surface publique statique : `ss.coresynq.cc` pointant vers un tunnel Cloudflare permanent unique `ss`
-- Pas de création/suppression DNS par session : le CNAME de `ss.coresynq.cc` est stable
+- Surface publique statique : `ss.example.com` pointant vers un tunnel Cloudflare permanent unique `ss`
+- Pas de création/suppression DNS par session : le CNAME de `ss.example.com` est stable
 - L’ingress de session est manipulée via la config du tunnel `ss` :
   - session active : routage vers `<scheme>://<target_ip>:<port>`
   - session expirée/fermée : `http_status:404` pour `/`, avec chemin de session dédié pour les services websocket/TCP comme Gotty
-- Auth : token aléatoire 32+ caractères dans le chemin URL `ss.coresynq.cc/<token>`, couplé à un TTL 15 minutes strict ; Cloudflare Access OTP refusé par défaut pour cause de friction.
+- Auth : token aléatoire 32+ caractères dans le chemin URL `ss.example.com/<token>`, couplé à un TTL 15 minutes strict ; Cloudflare Access OTP refusé par défaut pour cause de friction.
 - GC : timer systemd utilisateur transient via `systemd-run --user --property=RuntimeMaxSec=<ttl>`.
 - Fichier d’état sessions dans le skill : `chmod 600` obligatoire.
 
@@ -63,20 +63,20 @@ Si l’utilisateur fournit uniquement un contexte naturel, Hermes extrait :
 - Bash heredocs Python : ne pas attendre un `<<'PY'` quoted pour récupérer `ACCOUNT_ID`/`TUNNEL_ID` ; passer par `sys.argv` depuis le script bash plutôt que `os.environ[...]`.
 - DNS CNAME : pour un tunnel actif, le CNAME doit être `proxied: true`. Si `proxied: false`, le trafic ne passe pas par la couche d’inspection Cloudflare et les règles d’ingress peuvent ne pas s’appliquer. Vérifier avec `zones/{zone_id}/dns_records` avant de suspecter une panne tunnel.
 - Auth 400 sur config endpoint : un `PUT /configurations` qui retourne `Authentication failed (status: 400)` indique généralement un token sans scope tunnels/zero-trust, pas un problème global d’auth. `/user/tokens/verify` peut être trompeur.
-- Gotty derrière CF Tunnel : ajouter `--ws-origin "<hostname>"` pour éviter le rejet WebSocket par gotty. Exemple : `gotty -w -r --ws-origin "ss.coresynq.cc" ssh user@host`.
-- Validation réseau locale : un timeout `curl` depuis l’origine vers `ss.coresynq.cc` est souvent du hairpinning/NAT loopback, pas une preuve de panne. Ne pas perdre de temps dessus ; valider par l’API CF et par un test 4G extérieur.
+- Gotty derrière CF Tunnel : ajouter `--ws-origin "<hostname>"` pour éviter le rejet WebSocket par gotty. Exemple : `gotty -w -r --ws-origin "ss.example.com" ssh user@host`.
+- Validation réseau locale : un timeout `curl` depuis l’origine vers `ss.example.com` est souvent du hairpinning/NAT loopback, pas une preuve de panne. Ne pas perdre de temps dessus ; valider par l’API CF et par un test 4G extérieur.
 
 ## Domaine public
-- Sous-domaine unique dédié : `ss.coresynq.cc`
+- Sous-domaine unique dédié : `ss.example.com`
 - CNAME vers le tunnel permanent `ss` déjà provisionné ; ne pas le recréer/supprimer par session
-- URL publique finale : `https://ss.coresynq.cc/<session_token>`
+- URL publique finale : `https://ss.example.com/<session_token>`
 
 ## Sortie stricte
 Succès :
 ```json
 {
   "status": "success",
-  "public_url": "https://ss.coresynq.cc/<session_token>",
+  "public_url": "https://ss.example.com/<session_token>",
   "session_id": "<short-id>",
   "message": "Session temporaire établie.",
   "ttl_seconds": <ttl>,
@@ -152,15 +152,15 @@ Fichier : `scripts/cf_tunnel_manager.py` dans le répertoire du skill.
 - L’accès doit être considéré comme public non authentifié : l’entropie du token + TTL est le seul contrôle. Aucun chemin doit être exposé sans token.
 
 ## Limites
-- Un seul service actif à la fois sur `ss.coresynq.cc` sauf rotation explicite
+- Un seul service actif à la fois sur `ss.example.com` sauf rotation explicite
 - Targets/services/ports libres ; pas de mapping fixe obligatoire
 - `ttl` max autorisé : `7200` ; au-delà forcer `7200` et avertir
 - L’ingress de secours `http_status:404` doit rester la règle par défaut quand aucune session n’est active.
-- The permanent tunnel `ss` and its CNAME are owned by this skill. Other code or operators must not modify `ss.coresynq.cc` unless explicitly requested in-session.
+- The permanent tunnel `ss` and its CNAME are owned by this skill. Other code or operators must not modify `ss.example.com` unless explicitly requested in-session.
 - **NEVER touch protected domains declared by the user outside the requested scope**, e.g. `thaecreations.com`, unless the user explicitly authorizes a change in the same operative request.
 
 ## Références internes
 - `references/architecture-v2.md` : décision V2, justification sécurité, comparaison V1.
 - `references/environment_constraints.md` : contraintes découvertes dans la session, notamment absence de `at` et fallback timer systemd, chemin du script manager, mappings scheme/port par target, zone `coresynq.cc`.
 - `references/cloudflare_tunnel_api_pitfalls.md` : format création/config tunnel, erreurs JSON observées, ordre create-then-patch.
-- `references/selfservice_pattern.md` : pattern générique d’auto-inscription utilisateur pour exposition à la demande via `ss.coresynq.cc`.
+- `references/selfservice_pattern.md` : pattern générique d’auto-inscription utilisateur pour exposition à la demande via `ss.example.com`.

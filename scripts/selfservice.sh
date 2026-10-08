@@ -10,7 +10,7 @@ CF_CREDS="$HOME/.cloudflared/4a854f51-d2aa-4a42-a026-3e77eb776265.json"
 CF_CONFIG="$HOME/.cloudflared/config.yml"
 TUNNEL_ID="4a854f51-d2aa-4a42-a026-3e77eb776265"
 ACCOUNT_ID="3f84cf68cee5270e8d1032452404564a"
-HOST="ss.coresynq.cc"
+HOST="ss.example.com"
 DB="$HOME/.hermes/selfservice/selfservice_sessions.json"
 LOCK="$HOME/.hermes/selfservice/.active_session.lock"
 GOTTY_BIN="$HOME/.local/bin/gotty"
@@ -132,7 +132,7 @@ start_gotty() {
   local target="$1"; local port="$2"; local token="$3"
   mkdir -p "$HOME/.hermes/selfservice/logs"
   local log="$HOME/.hermes/selfservice/logs/gotty_${token}.log"
-  "$GOTTY_BIN" -w -r --ws-origin "ss.coresynq.cc" --port "$port" --permit-write \
+  "$GOTTY_BIN" -w -r --ws-origin "ss.example.com" --port "$port" --permit-write \
     --address 127.0.0.1 -t 'xterm-256color' \
     "$target" >"$log" 2>&1 &
   local pid=$!

@@ -1,7 +1,7 @@
 # Self-service exposure pattern
 
 ## Demand shape
-- Default public hostname: `ss.coresynq.cc`
+- Default public hostname: `ss.example.com`
 - All ephemeral tunnels share the same public hostname; rotation occurs by replacing the active ingress rather than creating a new subdomain per request.
 - Request schema:
   - `service`: `ssh`, `http`, `https`, `custom`
@@ -24,7 +24,7 @@
 - Session duration set to `ttl`.
 
 ## Cleanup / rotation
-- New request replaces the current tunnel ingress for `ss.coresynq.cc` rather than creating a new public hostname.
+- New request replaces the current tunnel ingress for `ss.example.com` rather than creating a new public hostname.
 - TTL timer triggers destroy; if user requests a new exposure before TTL expires, destroy the previous session first.
 - Keep state in `/tmp/cftunnel_<SESSION_ID>.json` for destroy/logging.
 

@@ -44,7 +44,7 @@
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   User Browser  │────▶│  ss.coresynq.cc  │────▶│  Cloudflare     │
+│   User Browser  │────▶│  ss.example.com  │────▶│  Cloudflare     │
 │                 │     │  /<token>        │     │  Tunnel (ss)    │
 └─────────────────┘     └──────────────────┘     └────────┬────────┘
                                                           │
@@ -86,7 +86,7 @@
 2. **Token Generation** — A cryptographically random 32-character token is generated
 3. **Ingress Update** — The Cloudflare Tunnel ingress is updated to route `/<token>` to the local proxy
 4. **Proxy Launch** — A local reverse proxy starts, forwarding traffic to the internal service
-5. **Link Delivery** — User receives `https://ss.coresynq.cc/<token>`
+5. **Link Delivery** — User receives `https://ss.example.com/<token>`
 6. **Automatic Cleanup** — After TTL expires, the ingress resets to 404 and the proxy terminates
 
 ---
@@ -171,7 +171,7 @@ cp -r skill/ ~/.hermes/skills/expose_internal_service/
 === SelfService session request ===
 type=http target=192.168.2.8 port=5001
 session_token=a1b2c3d4e5f6...
-SESSION_LINK=https://ss.coresynq.cc/a1b2c3d4e5f6...
+SESSION_LINK=https://ss.example.com/a1b2c3d4e5f6...
 EXPIRES_IN=900s
 ```
 
@@ -201,7 +201,7 @@ Simply ask Hermes:
 | Variable | Default | Description |
 |---|---|---|
 | `TTL_SEC` | `900` | Session lifetime in seconds (max 7200) |
-| `HOST` | `ss.coresynq.cc` | Public hostname for the tunnel |
+| `HOST` | `ss.example.com` | Public hostname for the tunnel |
 | `TUNNEL_ID` | — | Cloudflare Tunnel UUID |
 | `CF_CREDS` | — | Path to tunnel credentials file |
 | `DB` | — | Path to session database JSON |
@@ -223,7 +223,7 @@ Active session:
 tunnel: <TUNNEL_ID>
 credentials-file: /path/to/credentials.json
 ingress:
-  - hostname: ss.coresynq.cc
+  - hostname: ss.example.com
     path: /<token>
     service: http://127.0.0.1:18080
   - service: http_status:404

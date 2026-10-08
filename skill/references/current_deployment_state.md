@@ -1,5 +1,5 @@
 State as of 2026-07-16 deploy attempt:
-- Domain: ss.coresynq.cc
+- Domain: ss.example.com
 - Tunnel id: e2dca43a-bdc6-48d4-9c3b-a1d3e390b9e9
 - Tunnel name: ss
 - CNAME: ss -> e2dca43a-bdc6-48d4-9c3b-a1d3e390b9e9.cfargotunnel.com
