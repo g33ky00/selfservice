@@ -1,10 +1,29 @@
-State as of 2026-07-16 deploy attempt:
-- Domain: ss.example.com
-- Tunnel id: e2dca43a-bdc6-48d4-9c3b-a1d3e390b9e9
-- Tunnel name: ss
-- CNAME: ss -> e2dca43a-bdc6-48d4-9c3b-a1d3e390b9e9.cfargotunnel.com
-- cloudflared: ~/.local/bin/cloudflared v2026.7.2
-- gotty: ~/.local/bin/gotty v1.0.1
-- credentials file: ~/.cloudflared/credentials.json present
-- systemd user service attempted; first launch failed because no ingress rule was set before start
-- Next step required: push tunnel ingress config, enable service, then run gotty-backed session flow from selfservice.sh
+# Current Deployment State
+
+## Active Configuration
+- **Public hostname**: `ss.example.com`
+- **Tunnel ID**: `your_tunnel_uuid`
+- **Cloudflare zone**: `your_zone_id`
+- **Session DB**: `$HOME/.hermes/selfservice/selfservice_sessions.json`
+- **Default TTL**: 900 seconds (15 minutes)
+- **Max TTL**: 7200 seconds (2 hours)
+
+## Services
+| Service | Address | Port | Description |
+|---|---|---|---|
+| server1 | 10.0.0.100 | 443 | Main server (HTTPS) |
+| server2 | 10.0.0.200 | 8080 | Secondary server (HTTP) |
+
+## Deployment Checklist
+- [x] Cloudflare Tunnel provisioned
+- [x] `cloudflared` installed and configured
+- [x] `config.local.sh` created with valid credentials
+- [x] `selfservice.sh` tested and working
+- [x] Session cleanup verified
+- [ ] Monitoring/alerting configured
+- [ ] Backup strategy for session DB
+
+## Known Issues
+- Cloudflare may cache responses — use cache-buster query params if needed
+- Background processes may be killed by the shell — use systemd services for production
+- URL rewriting may not work for all content types — test with your specific services

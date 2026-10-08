@@ -1,4 +1,4 @@
-# Environment constraints discovered — 2026-07-03
+# Environment Constraints
 
 ## Scheduler availability
 - `at` is **not installed** on the host running this skill.
@@ -12,9 +12,21 @@
 ## Tunnel ingress flexibility
 - Different targets may need different upstream schemes and TLS verification:
   - `server1`: `https://10.0.0.100:443` + `noTLSVerify: true`
-  - `server2`: `http://10.0.0.100:8006` + `noTLSVerify: false`
+  - `server2`: `http://10.0.0.200:8080` + `noTLSVerify: false`
 - The manager must derive `service` from per-target `scheme` rather than hardcoding `https`.
 
 ## Cloudflare zone
-- `example.com` zone ID: `your_zone_id`
+- Zone ID: `your_zone_id`
 - Account ID sourced from `$HOME/.config/cloudflare/credentials.env`
+
+## Network
+- Internal services are on a private LAN (RFC 1918 addresses)
+- Cloudflare Tunnel provides the public access layer
+- No direct inbound connections to internal services
+
+## Paths
+- Session DB: `$HOME/.hermes/selfservice/selfservice_sessions.json`
+- Session lock: `$HOME/.hermes/selfservice/.active_session.lock`
+- Logs: `$HOME/.hermes/selfservice/logs/`
+- Gotty binary: `$HOME/.local/bin/gotty`
+- Cloudflare config: `$HOME/.cloudflared/config.yml`
